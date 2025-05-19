@@ -127,6 +127,34 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    "--prefetch-factor",
+    type=int,
+    default=2,
+    help="Number of batches prefetched by each worker",
+)
+
+parser.add_argument(
+    "--persistent-workers",
+    action="store_true",
+    default=False,
+    help="Use persistent DataLoader workers",
+)
+
+parser.add_argument(
+    "--compile",
+    action="store_true",
+    default=False,
+    help="Compile the model with torch.compile",
+)
+
+parser.add_argument(
+    "--cudnn-benchmark",
+    action="store_true",
+    default=False,
+    help="Enable cudnn benchmark for variable length inputs",
+)
+
+parser.add_argument(
     "--map-bins",
     type=int,
     default=config["inference"]["map_bins"],
@@ -157,6 +185,9 @@ args = parser.parse_args()
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 label_normalizer = read_json(args.parenthood_path) if args.parenthood_path is not None else None
 
+if args.cudnn_benchmark:
+    torch.backends.cudnn.benchmark = True
+
 
 #Load datasets
 test_dataset = ProteinDataset(
@@ -184,6 +215,8 @@ loaders = create_multiple_loaders(
     dataset_specs = dataset_specs,
     num_workers = args.num_workers,
     pin_memory = not args.unpin_memory,
+    prefetch_factor = args.prefetch_factor,
+    persistent_workers = args.persistent_workers,
     world_size = 1,
     rank = 0
 )
@@ -192,6 +225,9 @@ loaders = create_multiple_loaders(
 model = ProteInfer.from_pretrained(
     pretrained_model_name_or_path=args.weights_dir,
 ).to(device).eval()
+
+if args.compile:
+    model = torch.compile(model)
 
 assert model.output_layer.out_features == num_labels, "Number of labels in the model does not match the number of labels in the dataset"
 

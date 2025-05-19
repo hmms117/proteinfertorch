@@ -163,6 +163,8 @@ def create_multiple_loaders(
     dataset_specs: list,
     num_workers: int = 2,
     pin_memory: bool = True,
+    prefetch_factor: int = 2,
+    persistent_workers: bool = False,
     world_size: int = 1,
     rank: int = 0
 ) -> List[DataLoader]:
@@ -186,7 +188,9 @@ def create_multiple_loaders(
             num_workers=num_workers,
             pin_memory=pin_memory,
             drop_last=dataset_spec['drop_last'],
-            sampler=sequence_sampler
+            sampler=sequence_sampler,
+            prefetch_factor=prefetch_factor,
+            persistent_workers=persistent_workers
         )
         loaders[dataset_spec["name"]] = loader
 
