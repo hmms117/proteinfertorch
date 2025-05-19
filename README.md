@@ -81,6 +81,16 @@ python bin/inference.py --data-path data/random_split/test_GO.fasta --vocabulary
 
 To save the prediction logits, probabilities and labels, add the flag --save-prediction-results. For EC numers use the full_EC.json vocabulary.
 
+### High-throughput inference
+When running inference on extremely large datasets (e.g., billions of sequences) you can enable several performance options:
+
+* `--compile` – wraps the model with `torch.compile` for JIT optimisation.
+* `--cudnn-benchmark` – lets cuDNN search for the fastest convolution kernels when sequence lengths vary.
+* `--prefetch-factor` – number of batches prefetched per worker (default: 2).
+* `--persistent-workers` – keep dataloader workers alive between epochs.
+
+Combine these flags with larger `--batch-size` and higher `--num-workers` if your hardware allows. Split your FASTA files into many shards and run multiple instances of `bin/inference.py` in parallel (e.g., one per GPU) to scale up to billions of sequences.
+
 
 ## Extract Embeddings
 Users can extract and save ProteInferTorch embeddings using the get_embeddings.py script. The embeddings will be stored in one or more .pt files inside of --output-dir, depending on the number of --num-embedding-partitions specified.
